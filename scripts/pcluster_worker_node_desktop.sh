@@ -2,6 +2,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
+yum upgrade -y
 yum -y -q install jq amazon-efs-utils
 # Get OOD Stack data
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
@@ -54,15 +55,14 @@ gpgkey=https://sourceforge.net/projects/turbovnc/files/VGL-GPG-KEY
 enabled=1
 EOF
 
-yum install turbovnc -y
+yum install turbovnc xfce4-session xfwm4 xfce4-panel xfdesktop xfce4-settings -y
 
 amazon-linux-extras install python3.8
 ln -sf /usr/bin/python3.8 /usr/bin/python3
 
 pip3 install --no-input websockify
 pip3 install --no-input jupyter
-
-amazon-linux-extras install mate-desktop1.x -y
+pip3 install --no-input notebook
 
 #
 cat >> /etc/bashrc << 'EOF'

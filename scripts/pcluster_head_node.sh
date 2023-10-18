@@ -62,6 +62,8 @@ v2:
     bin: "/bin"
     bin_overrides:
       sbatch: "/etc/ood/config/bin_overrides.py"
+      squeue: "/etc/ood/config/squeue_override.py"
+      scancel: "/etc/ood/config/scancel_override.py"
 EOF
 
 cat << EOF > /opt/slurm/etc/slurmdbd.conf

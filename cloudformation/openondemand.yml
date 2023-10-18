@@ -15,11 +15,11 @@ Metadata:
           default: Portal
         Parameters:
           - WebsiteDomainName
+          - CertificateArn
           - PortalAllowedIPCIDR
       - Label:
           default: DNS Settings
         Parameters:
-          - HostedZoneName
           - HostedZoneId
     ParameterLabels:
       DomainName:
@@ -28,10 +28,10 @@ Metadata:
         default: Top level domain
       PortalAllowedIPCIDR:
         default: Portal Allowed IP CIDR
+      CertificateArn:
+        default: ARN for ACM Certificate
       WebsiteDomainName:
         default: Website Domain Name
-      HostedZoneName:
-        default: Hosted Zone Name
       HostedZoneId:
         default: Hosted Zone Id
 Parameters:
@@ -50,10 +50,8 @@ Parameters:
   WebsiteDomainName:
     Description: Domain name for world facing website
     Type: String
-  HostedZoneName:
-    Description: Hosted zone for the domain
-    Type: String
-    AllowedPattern: '[A-Za-z\.]*\.$'
+  CertificateArn:
+    Description: ARN for ACM Certificate
   HostedZoneId:
     Description: Hosted Zone Id for Route53 Domain
     Type: String
@@ -62,6 +60,12 @@ Parameters:
     Type: String
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: must be a valid CIDR range of the form x.x.x.x/x.
+  VPCPrefix:
+    Description: Allows overriding the first 16 bits of the VPC CIDR for development
+    Type: String
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.'
+    ConstraintDescription: Must be string like '10.100'
+    Default: '10.0'
   Branch:
     Description: Branch of the code to deploy. Only use this when testing changes to the solution
     Default: main
@@ -119,19 +123,10 @@ Mappings:
       AMIID: ami-0f2c91ec8df4bde48
       ALBLogAccount: 009996457667
 Resources:
-
-  OODCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Ref WebsiteDomainName
-      ValidationMethod: DNS
-      DomainValidationOptions:
-        - HostedZoneId: !Ref HostedZoneId
-          DomainName: !Ref WebsiteDomainName
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: !Sub '${VPCPrefix}.0.0/16'
       EnableDnsHostnames: true
       Tags:
         - Key: Name
@@ -245,9 +240,9 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select
-        - 0
+        - 2
         - Fn::GetAZs: !Ref 'AWS::Region'
-      CidrBlock: 10.0.0.0/26
+      CidrBlock: !Sub '${VPCPrefix}.0.0/26'
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: false
       Tags:
@@ -260,7 +255,7 @@ Resources:
       AvailabilityZone: !Select
         - 1
         - Fn::GetAZs: !Ref 'AWS::Region'
-      CidrBlock: 10.0.0.128/26
+      CidrBlock: !Sub '${VPCPrefix}.0.128/26'
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: false
       Tags:
@@ -271,9 +266,9 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select
-        - 0
+        - 2
         - Fn::GetAZs: !Ref 'AWS::Region'
-      CidrBlock: 10.0.2.0/24
+      CidrBlock: !Sub '${VPCPrefix}.2.0/24'
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: false
       Tags:
@@ -301,7 +296,7 @@ Resources:
       AvailabilityZone: !Select
         - 1
         - Fn::GetAZs: !Ref 'AWS::Region'
-      CidrBlock: 10.0.3.0/24
+      CidrBlock: !Sub '${VPCPrefix}.3.0/24'
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: false
       Tags:
@@ -489,7 +484,7 @@ Resources:
       ToPort: 389
       Description: Allows outbound from portal to LDAP in VPC CIDR
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: 10.0.0.0/16
+      CidrIp: !Sub '${VPCPrefix}.0.0/16'
 
   PortalHeadNodeLDAPUDPEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -499,7 +494,7 @@ Resources:
       ToPort: 389
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: 10.0.0.0/16
+      CidrIp: !Sub '${VPCPrefix}.0.0/16'
 
   PortalHeadNodeLDAPDNSEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -509,7 +504,7 @@ Resources:
       ToPort: 53
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: 10.0.0.0/16
+      CidrIp: !Sub '${VPCPrefix}.0.0/16'
 
   PortalHeadNodeLDAP464Egress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -519,7 +514,7 @@ Resources:
       ToPort: 464
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: 10.0.0.0/16
+      CidrIp: !Sub '${VPCPrefix}.0.0/16'
 
   PortalHeadNodeLDAPDNSUDPEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -529,7 +524,7 @@ Resources:
       ToPort: 53
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: 10.0.0.0/16
+      CidrIp: !Sub '${VPCPrefix}.0.0/16'
 
   PortalHeadNodeLDAPPingUDPEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -539,7 +534,7 @@ Resources:
       ToPort: 88
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: 10.0.0.0/16
+      CidrIp: !Sub '${VPCPrefix}.0.0/16'
 
 
   PortalHeadNodeLDAPKerberosTCPEgress:
@@ -550,7 +545,7 @@ Resources:
       ToPort: 88
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: 10.0.0.0/16
+      CidrIp: !Sub '${VPCPrefix}.0.0/16'
 
   PortalHeadNodeSSHEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -1014,7 +1009,7 @@ Resources:
           TargetGroupArn: !Ref OpenOnDemandTargetGroupHTTPS
       LoadBalancerArn: !Ref ALB
       Certificates:
-        - CertificateArn: !Ref OODCertificate
+        - CertificateArn: !Ref CertificateArn
       Port: 443
       Protocol: "HTTPS"
       SslPolicy: ELBSecurityPolicy-TLS-1-2-Ext-2018-06
@@ -1314,7 +1309,7 @@ Resources:
   DNSRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneName: !Ref HostedZoneName
+      HostedZoneId: !Ref HostedZoneId
       Name: !Ref WebsiteDomainName
       AliasTarget:
         DNSName: !GetAtt ALB.DNSName
@@ -1487,7 +1482,7 @@ Resources:
 Outputs:
   URL:
     Description: URL
-    Value: !Sub http://${ALB.DNSName}
+    Value: !Sub https://${ALB.DNSName}
   VPCId:
     Description: VPC ID
     Value: !Ref VPC
