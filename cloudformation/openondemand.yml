@@ -80,6 +80,9 @@ Parameters:
     Description: Verion of slurm to install
     Default: 23.02.5
     Type: String
+  PclusterName:
+    Description: Name of the future ParallelCluster
+    Type: String
 Mappings:
   # Ubuntu 22.04
   RegionMap:
@@ -795,6 +798,7 @@ Resources:
                 export EFS_ID=${SharedFileSystem}
                 export CLUSTER_CONFIG_BUCKET=${ClusterConfigBucket}
                 export SLURM_VERSION=${SlurmVersion}
+                export PCLUSTER_NAME=${PclusterName}
               mode: "000744"
               owner: "root"
               group: "root"
