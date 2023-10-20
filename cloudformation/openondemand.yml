@@ -21,6 +21,11 @@ Metadata:
           default: DNS Settings
         Parameters:
           - HostedZoneId
+      - Label:
+          default: Development Settings
+        Parameters:
+          - VpcPrefix
+          - Branch
     ParameterLabels:
       DomainName:
         default: Domain Name
@@ -52,6 +57,7 @@ Parameters:
     Type: String
   CertificateArn:
     Description: ARN for ACM Certificate
+    Type: String
   HostedZoneId:
     Description: Hosted Zone Id for Route53 Domain
     Type: String
@@ -60,10 +66,10 @@ Parameters:
     Type: String
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: must be a valid CIDR range of the form x.x.x.x/x.
-  VPCPrefix:
+  VpcPrefix:
     Description: Allows overriding the first 16 bits of the VPC CIDR for development
     Type: String
-    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.'
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})'
     ConstraintDescription: Must be string like '10.100'
     Default: '10.0'
   Branch:
@@ -126,7 +132,7 @@ Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Sub '${VPCPrefix}.0.0/16'
+      CidrBlock: !Sub '${VpcPrefix}.0.0/16'
       EnableDnsHostnames: true
       Tags:
         - Key: Name
@@ -242,7 +248,7 @@ Resources:
       AvailabilityZone: !Select
         - 2
         - Fn::GetAZs: !Ref 'AWS::Region'
-      CidrBlock: !Sub '${VPCPrefix}.0.0/26'
+      CidrBlock: !Sub '${VpcPrefix}.0.0/26'
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: false
       Tags:
@@ -255,7 +261,7 @@ Resources:
       AvailabilityZone: !Select
         - 1
         - Fn::GetAZs: !Ref 'AWS::Region'
-      CidrBlock: !Sub '${VPCPrefix}.0.128/26'
+      CidrBlock: !Sub '${VpcPrefix}.0.128/26'
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: false
       Tags:
@@ -268,7 +274,7 @@ Resources:
       AvailabilityZone: !Select
         - 2
         - Fn::GetAZs: !Ref 'AWS::Region'
-      CidrBlock: !Sub '${VPCPrefix}.2.0/24'
+      CidrBlock: !Sub '${VpcPrefix}.2.0/24'
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: false
       Tags:
@@ -296,7 +302,7 @@ Resources:
       AvailabilityZone: !Select
         - 1
         - Fn::GetAZs: !Ref 'AWS::Region'
-      CidrBlock: !Sub '${VPCPrefix}.3.0/24'
+      CidrBlock: !Sub '${VpcPrefix}.3.0/24'
       VpcId: !Ref VPC
       MapPublicIpOnLaunch: false
       Tags:
@@ -396,6 +402,16 @@ Resources:
           ToPort: 443
           IpProtocol: tcp
           Description: HTTPS Access
+        - CidrIp: !Sub '${EIP1.PublicIp}/32'
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+          Description: HTTPS Access
+        - CidrIp: !Sub '${EIP2.PublicIp}/32'
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+          Description: HTTPS Access
       SecurityGroupEgress:
         - Description: Remove default rule for egress
           CidrIp: 127.0.0.1/32
@@ -484,7 +500,7 @@ Resources:
       ToPort: 389
       Description: Allows outbound from portal to LDAP in VPC CIDR
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: !Sub '${VPCPrefix}.0.0/16'
+      CidrIp: !Sub '${VpcPrefix}.0.0/16'
 
   PortalHeadNodeLDAPUDPEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -494,7 +510,7 @@ Resources:
       ToPort: 389
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: !Sub '${VPCPrefix}.0.0/16'
+      CidrIp: !Sub '${VpcPrefix}.0.0/16'
 
   PortalHeadNodeLDAPDNSEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -504,7 +520,7 @@ Resources:
       ToPort: 53
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: !Sub '${VPCPrefix}.0.0/16'
+      CidrIp: !Sub '${VpcPrefix}.0.0/16'
 
   PortalHeadNodeLDAP464Egress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -514,7 +530,7 @@ Resources:
       ToPort: 464
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: !Sub '${VPCPrefix}.0.0/16'
+      CidrIp: !Sub '${VpcPrefix}.0.0/16'
 
   PortalHeadNodeLDAPDNSUDPEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -524,7 +540,7 @@ Resources:
       ToPort: 53
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: !Sub '${VPCPrefix}.0.0/16'
+      CidrIp: !Sub '${VpcPrefix}.0.0/16'
 
   PortalHeadNodeLDAPPingUDPEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -534,7 +550,7 @@ Resources:
       ToPort: 88
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: !Sub '${VPCPrefix}.0.0/16'
+      CidrIp: !Sub '${VpcPrefix}.0.0/16'
 
 
   PortalHeadNodeLDAPKerberosTCPEgress:
@@ -545,7 +561,7 @@ Resources:
       ToPort: 88
       Description: Allows outbound from portal to LDAP
       GroupId: !GetAtt PortalSecurityGroup.GroupId
-      CidrIp: !Sub '${VPCPrefix}.0.0/16'
+      CidrIp: !Sub '${VpcPrefix}.0.0/16'
 
   PortalHeadNodeSSHEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -763,7 +779,7 @@ Resources:
             configure_cert:
               command: !Sub /etc/ood-install/open-on-demand-on-aws-${Branch}/scripts/configure_instance_cert.sh
           sources:
-            /etc/ood-install: !Sub https://github.com/aws-samples/open-on-demand-on-aws/archive/refs/heads/${Branch}.zip
+            /etc/ood-install: !Sub https://github.com/d3b-center/open-on-demand-on-aws/archive/refs/heads/${Branch}.zip
           files: # Creates a file with appropriate variables for use in scripts. No secrets in here
             /etc/ood-install/set_variables.sh:
               content: !Sub |
