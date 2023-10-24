@@ -54,15 +54,14 @@ gpgkey=https://sourceforge.net/projects/turbovnc/files/VGL-GPG-KEY
 enabled=1
 EOF
 
-yum install turbovnc -y
+yum install turbovnc xfce4-session xfwm4 xfce4-panel xfdesktop xfce4-settings -y
 
 amazon-linux-extras install python3.8
 ln -sf /usr/bin/python3.8 /usr/bin/python3
 
 pip3 install --no-input websockify
 pip3 install --no-input jupyter
-
-amazon-linux-extras install mate-desktop1.x -y
+pip3 install --no-input notebook
 
 #
 cat >> /etc/bashrc << 'EOF'

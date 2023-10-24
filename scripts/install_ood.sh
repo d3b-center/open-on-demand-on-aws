@@ -157,7 +157,7 @@ touch /var/log/sbatch.log
 chmod 666 /var/log/sbatch.log
 
 # Create this bin overrides script on the box: https://osc.github.io/ood-documentation/latest/installation/resource-manager/bin-override-example.html
-cat << EOF >> /etc/ood/config/bin_overrides.py
+cat << EOF > /etc/ood/config/sbatch_override.py
 #!/bin/python3
 from getpass import getuser
 from select import select
@@ -255,16 +255,237 @@ if __name__ == '__main__':
   main()
 EOF
 
-chmod +x /etc/ood/config/bin_overrides.py
+cat << EOF > /etc/ood/config/squeue_override.py
+#!/bin/python3
+from getpass import getuser
+from select import select
+from sh import ssh, ErrorReturnCode
+import logging
+import os
+import re
+import sys
+import yaml
+
+'''
+An example of a "bin_overrides" replacing Slurm "squeue" for use with Open OnDemand.
+Executes squeue on the target cluster vs OOD node to get around painful experiences with squeue + EFA.
+
+Requirements:
+
+- $USER must be able to SSH from web node to submit node without using a password
+'''
+logging.basicConfig(filename='/var/log/squeue.log', level=logging.INFO)
+
+USER = os.environ['USER']
+
+def run_remote_squeue(script,host_name, *argv):
+  """
+  @brief      SSH and submit the job from the submission node
+
+  @param      script (str)  The script
+  @parma      host_name (str) The hostname of the head node on which to execute the script
+  @param      argv (list<str>)    The argument vector for squeue
+
+  @return     output (str) The merged stdout/stderr of the remote squeue call
+  """
+
+  output = None
+
+  try:
+    result = ssh(
+      '@'.join([USER, host_name]),
+      '-oBatchMode=yes',  # ensure that SSH does not hang waiting for a password that will never be sent
+      '-oStrictHostKeyChecking=no',
+      '/opt/slurm/bin/squeue',  # the real squeue on the remote
+      *argv,  # any arguments that squeue should get
+      _in=script,  # redirect the script's contents into stdin
+      _err_to_out=True  # merge stdout and stderr
+    )
+
+    output = result
+    logging.info(output)
+  except ErrorReturnCode as e:
+    output = e
+    logging.error(output)
+    print(output)
+    sys.exit(e.exit_code)
+
+  return output
+
+def load_script():
+  """
+  @brief      Loads a script from stdin.
+
+  With OOD and Slurm the user's script is read from disk and passed to squeue via stdin
+  https://github.com/OSC/ood_core/blob/5b4d93636e0968be920cf409252292d674cc951d/lib/ood_core/job/adapters/slurm.rb#L138-L148
+
+  @return     script (str) The script content
+  """
+  # Do not hang waiting for stdin that is not coming
+  if not select([sys.stdin], [], [], 0.0)[0]:
+    logging.error('No script available on stdin!')
+    sys.exit(1)
+
+  return sys.stdin.read()
+
+def get_cluster_host(cluster_name):
+  with open(f"/etc/ood/config/clusters.d/{cluster_name}.yml", "r") as stream:
+    try:
+      config_file=yaml.safe_load(stream)
+    except yaml.YAMLError as e:
+      logging.error(e)
+  return config_file["v2"]["login"]["host"]
+
+def main():
+  """
+  @brief SSHs from web node to submit node and executes the remote squeue.
+  """
+  host_name=get_cluster_host(sys.argv[-1])
+  output = run_remote_squeue(
+    load_script(),
+    host_name,
+    sys.argv[1:]
+  )
+
+  print(output)
+
+if __name__ == '__main__':
+  main()
+EOF
+
+cat << EOF > /etc/ood/config/scancel_override.py
+#!/bin/python3
+from getpass import getuser
+from select import select
+from sh import ssh, ErrorReturnCode
+import logging
+import os
+import re
+import sys
+import yaml
+
+'''
+An example of a "bin_overrides" replacing Slurm "scancel" for use with Open OnDemand.
+Executes scancel on the target cluster vs OOD node to get around painful experiences with scancel + EFA.
+
+Requirements:
+
+- $USER must be able to SSH from web node to submit node without using a password
+'''
+logging.basicConfig(filename='/var/log/scancel.log', level=logging.INFO)
+
+USER = os.environ['USER']
+
+def run_remote_scancel(script,host_name, *argv):
+  """
+  @brief      SSH and submit the job from the submission node
+
+  @param      script (str)  The script
+  @parma      host_name (str) The hostname of the head node on which to execute the script
+  @param      argv (list<str>)    The argument vector for scancel
+
+  @return     output (str) The merged stdout/stderr of the remote scancel call
+  """
+
+  output = None
+
+  try:
+    result = ssh(
+      '@'.join([USER, host_name]),
+      '-oBatchMode=yes',  # ensure that SSH does not hang waiting for a password that will never be sent
+      '-oStrictHostKeyChecking=no',
+      '/opt/slurm/bin/scancel',  # the real scancel on the remote
+      *argv,  # any arguments that scancel should get
+      _in=script,  # redirect the script's contents into stdin
+      _err_to_out=True  # merge stdout and stderr
+    )
+
+    output = result
+    logging.info(output)
+  except ErrorReturnCode as e:
+    output = e
+    logging.error(output)
+    print(output)
+    sys.exit(e.exit_code)
+
+  return output
+
+def load_script():
+  """
+  @brief      Loads a script from stdin.
+
+  With OOD and Slurm the user's script is read from disk and passed to scancel via stdin
+  https://github.com/OSC/ood_core/blob/5b4d93636e0968be920cf409252292d674cc951d/lib/ood_core/job/adapters/slurm.rb#L138-L148
+
+  @return     script (str) The script content
+  """
+  # Do not hang waiting for stdin that is not coming
+  if not select([sys.stdin], [], [], 0.0)[0]:
+    logging.error('No script available on stdin!')
+    sys.exit(1)
+
+  return sys.stdin.read()
+
+def get_cluster_host(cluster_name):
+  with open(f"/etc/ood/config/clusters.d/{cluster_name}.yml", "r") as stream:
+    try:
+      config_file=yaml.safe_load(stream)
+    except yaml.YAMLError as e:
+      logging.error(e)
+  return config_file["v2"]["login"]["host"]
+
+def main():
+  """
+  @brief SSHs from web node to submit node and executes the remote scancel.
+  """
+  host_name=get_cluster_host(sys.argv[-1])
+  output = run_remote_scancel(
+    load_script(),
+    host_name,
+    sys.argv[1:]
+  )
+
+  print(output)
+
+if __name__ == '__main__':
+  main()
+EOF
+
+touch /var/log/scancel.log
+touch /var/log/squeue.log
+touch /var/log/sbatch.log
+
+chmod 666 /var/log/scancel.log
+chmod 666 /var/log/squeue.log
+chmod 666 /var/log/sbatch.log
+
+chmod +x /etc/ood/config/sbatch_override.py
+chmod +x /etc/ood/config/squeue_override.py
+chmod +x /etc/ood/config/scancel_override.py
 #Edit sudoers to allow www-data to add users
 echo "www-data  ALL=NOPASSWD: /sbin/adduser" >> /etc/sudoers
 echo "www-data  ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+mkdir -p /etc/ood/config/apps/bc_desktop/submit/
+
+cat << EOF >> /etc/ood/config/apps/bc_desktop/${PCLUSTER_NAME}.yml
+---
+title: "$PCLUSTER_NAME Desktop"
+cluster: "${PCLUSTER_NAME}"
+submit: "submit/${PCLUSTER_NAME}-submit.yml.erb"
+attributes:
+  desktop: xfce
+  bc_queue: desktop
+  bc_account: null
+EOF
+
 # Setup for interactive desktops with PCluster
-rm -rf /var/www/ood/apps/sys/bc_desktop/submit.yml.erb
-cat << EOF >> /var/www/ood/apps/sys/bc_desktop/submit.yml.erb
+
+cat << EOF >> /etc/ood/config/apps/bc_desktop/submit/${PCLUSTER_NAME}-submit.yml.erb
 batch_connect:
   template: vnc
   websockify_cmd: "/usr/local/bin/websockify"
+  set_host: "host=\$(hostname | awk '{print \$1}').${PCLUSTER_NAME}.pcluster"
+cluster: ${PCLUSTER_NAME}
 EOF
 shutdown -r now

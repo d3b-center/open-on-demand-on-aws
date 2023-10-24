@@ -61,7 +61,20 @@ v2:
     cluster: "$STACK_NAME"
     bin: "/bin"
     bin_overrides:
-      sbatch: "/etc/ood/config/bin_overrides.py"
+      sbatch: "/etc/ood/config/sbatch_override.py"
+      squeue: "/etc/ood/config/squeue_override.py"
+      scancel: "/etc/ood/config/scancel_override.py"
+  batch_connect:
+    basic:
+      script_wrapper: |
+        module purge
+        %s
+    vnc:
+      script_wrapper: |
+        module purge
+        export PATH="/opt/TurboVNC/bin:/usr/local/turbovnc/bin:\$PATH"
+        export WEBSOCKIFY_CMD="/usr/local/websockify/run"
+        %s
 EOF
 
 cat << EOF > /opt/slurm/etc/slurmdbd.conf

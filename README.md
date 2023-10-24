@@ -4,6 +4,14 @@ This reference architecture provides a set of templates for deploying [Open OnDe
 
 The main branch is for Open OnDemand v 3.0.0 
 
+## D3B Getting started
+
+1. Create the Cloudformation stack with all appropriate parameters. Currently this is done via the UI. For convenience, specify the option to not rollback on failure, as you may need to retry the deployment if the Active Directory resource fails (which seemed common). 
+2. Run the script `create_pcluster.sh` in the `scripts` directory like so: ```
+./create_pcluster.sh {CFN stack name} {Cluster name from CFN parameters}
+```
+3. When everything is created, you can log in at the domain you specified in the parameters, with the user `admin` and the password in the `ADAdministratorSecret` in the CFN outputs.
+
 ## Architecture
 
 ![architecture](images/architecture.png)

@@ -4,12 +4,11 @@
 # It needs to read outputs from your OOD stack you already deployed. So you need to have the AWS_PROFILE or access key environment variables set
 # The cluster will have two partitions defined, one for general workload, one for interactive desktop.
 # Please update your
-export STACK_NAME="ood-30"
-export SSH_KEY='<your SSH_KEY name>'
+export STACK_NAME="${1}"
 
 
 export REGION="us-east-1"
-export DOMAIN_1="rc"
+export DOMAIN_1="hpclab"
 export DOMAIN_2="local"
 
 export OOD_STACK=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $REGION )
@@ -27,7 +26,7 @@ export LDAP_ENDPOINT=$(echo $OOD_STACK | jq -r '.Stacks[].Outputs[] | select(.Ou
 
 cat << EOF > ../pcluster-config.yml
 HeadNode:
-  InstanceType: c5.large
+  InstanceType: t3.small
   Networking:
     SubnetId: $SUBNET
     AdditionalSecurityGroups:
@@ -76,6 +75,7 @@ Scheduling:
             - $STACK_NAME
       Iam:
         AdditionalIamPolicies:
+          - Policy: arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
           - Policy: >-
               $COMPUTE_POLICY
     - Name: desktop
@@ -83,7 +83,7 @@ Scheduling:
       ComputeResources:
         - Name: desktop-cr
           Instances:
-            - InstanceType: c5n.2xlarge
+            - InstanceType: c5n.xlarge
           MinCount: 0
           MaxCount: 10
       Networking:
@@ -104,6 +104,7 @@ Scheduling:
             - $STACK_NAME
       Iam:
         AdditionalIamPolicies:
+          - Policy: arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
           - Policy: >-
               $COMPUTE_POLICY
   SlurmSettings: {}
@@ -117,4 +118,10 @@ DirectoryService:
   DomainReadOnlyUser: cn=Admin,ou=Users,ou=$DOMAIN_1,dc=$DOMAIN_1,dc=$DOMAIN_2
   AdditionalSssdConfigs:
     override_homedir: /shared/home/%u
+SharedStorage:
+  - MountDir: /fsx
+    Name: $STACK_NAME-fsxshared
+    StorageType: FsxLustre
+    FsxLustreSettings:
+      StorageCapacity: 1200
 EOF
