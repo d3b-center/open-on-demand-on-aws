@@ -466,7 +466,8 @@ chmod +x /etc/ood/config/scancel_override.py
 echo "www-data  ALL=NOPASSWD: /sbin/adduser" >> /etc/sudoers
 echo "www-data  ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-touch /etc/ood/config/apps/bc_desktop/${PCLUSTER_NAME}.yml
+mkdir -p /etc/ood/config/apps/bc_desktop/submit/
+
 cat << EOF >> /etc/ood/config/apps/bc_desktop/${PCLUSTER_NAME}.yml
 ---
 title: "$PCLUSTER_NAME Desktop"
@@ -479,7 +480,7 @@ attributes:
 EOF
 
 # Setup for interactive desktops with PCluster
-mkdir /etc/ood/config/apps/bc_desktop/submit/
+
 cat << EOF >> /etc/ood/config/apps/bc_desktop/submit/${PCLUSTER_NAME}-submit.yml.erb
 batch_connect:
   template: vnc

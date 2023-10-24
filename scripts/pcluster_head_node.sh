@@ -72,7 +72,7 @@ v2:
     vnc:
       script_wrapper: |
         module purge
-        export PATH="/opt/TurboVNC/bin:/usr/local/turbovnc/bin:$PATH"
+        export PATH="/opt/TurboVNC/bin:/usr/local/turbovnc/bin:\$PATH"
         export WEBSOCKIFY_CMD="/usr/local/websockify/run"
         %s
 EOF
