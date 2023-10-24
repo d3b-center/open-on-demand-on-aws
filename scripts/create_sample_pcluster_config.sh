@@ -26,7 +26,7 @@ export LDAP_ENDPOINT=$(echo $OOD_STACK | jq -r '.Stacks[].Outputs[] | select(.Ou
 
 cat << EOF > ../pcluster-config.yml
 HeadNode:
-  InstanceType: t3.medium
+  InstanceType: t3.small
   Networking:
     SubnetId: $SUBNET
     AdditionalSecurityGroups:

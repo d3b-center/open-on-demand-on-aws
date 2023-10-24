@@ -61,7 +61,7 @@ v2:
     cluster: "$STACK_NAME"
     bin: "/bin"
     bin_overrides:
-      sbatch: "/etc/ood/config/bin_overrides.py"
+      sbatch: "/etc/ood/config/sbatch_override.py"
       squeue: "/etc/ood/config/squeue_override.py"
       scancel: "/etc/ood/config/scancel_override.py"
   batch_connect:
