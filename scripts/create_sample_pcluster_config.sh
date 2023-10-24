@@ -26,7 +26,7 @@ export LDAP_ENDPOINT=$(echo $OOD_STACK | jq -r '.Stacks[].Outputs[] | select(.Ou
 
 cat << EOF > ../pcluster-config.yml
 HeadNode:
-  InstanceType: c5.large
+  InstanceType: t3.medium
   Networking:
     SubnetId: $SUBNET
     AdditionalSecurityGroups:
@@ -75,6 +75,7 @@ Scheduling:
             - $STACK_NAME
       Iam:
         AdditionalIamPolicies:
+          - Policy: arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
           - Policy: >-
               $COMPUTE_POLICY
     - Name: desktop
@@ -103,6 +104,7 @@ Scheduling:
             - $STACK_NAME
       Iam:
         AdditionalIamPolicies:
+          - Policy: arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
           - Policy: >-
               $COMPUTE_POLICY
   SlurmSettings: {}

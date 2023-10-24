@@ -861,7 +861,7 @@ Resources:
       LaunchTemplateName: !Sub ${AWS::StackName}-launch-template-cfn-init
       LaunchTemplateData:
         ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMIID]
-        InstanceType: m6i.large
+        InstanceType: t3.small
         IamInstanceProfile:
           Name: !Ref OpenOnDemandInstanceProfile
         BlockDeviceMappings:

@@ -157,7 +157,7 @@ touch /var/log/sbatch.log
 chmod 666 /var/log/sbatch.log
 
 # Create this bin overrides script on the box: https://osc.github.io/ood-documentation/latest/installation/resource-manager/bin-override-example.html
-cat << EOF >> /etc/ood/config/bin_overrides.py
+cat << EOF > /etc/ood/config/sbatch_override.py
 #!/bin/python3
 from getpass import getuser
 from select import select
@@ -255,7 +255,7 @@ if __name__ == '__main__':
   main()
 EOF
 
-cat << EOF >> /etc/ood/config/squeue_override.py
+cat << EOF > /etc/ood/config/squeue_override.py
 #!/bin/python3
 from getpass import getuser
 from select import select
@@ -302,10 +302,10 @@ def run_remote_squeue(script,host_name, *argv):
       _err_to_out=True  # merge stdout and stderr
     )
 
-    output = result.stdout.decode('utf-8')
+    output = result
     logging.info(output)
   except ErrorReturnCode as e:
-    output = e.stdout.decode('utf-8')
+    output = e
     logging.error(output)
     print(output)
     sys.exit(e.exit_code)
@@ -353,7 +353,7 @@ if __name__ == '__main__':
   main()
 EOF
 
-cat << EOF >> /etc/ood/config/scancel_override.py
+cat << EOF > /etc/ood/config/scancel_override.py
 #!/bin/python3
 from getpass import getuser
 from select import select
@@ -400,10 +400,10 @@ def run_remote_scancel(script,host_name, *argv):
       _err_to_out=True  # merge stdout and stderr
     )
 
-    output = result.stdout.decode('utf-8')
+    output = result
     logging.info(output)
   except ErrorReturnCode as e:
-    output = e.stdout.decode('utf-8')
+    output = e
     logging.error(output)
     print(output)
     sys.exit(e.exit_code)
@@ -459,21 +459,32 @@ chmod 666 /var/log/scancel.log
 chmod 666 /var/log/squeue.log
 chmod 666 /var/log/sbatch.log
 
-chmod +x /etc/ood/config/bin_overrides.py
+chmod +x /etc/ood/config/sbatch_override.py
 chmod +x /etc/ood/config/squeue_override.py
 chmod +x /etc/ood/config/scancel_override.py
 #Edit sudoers to allow www-data to add users
 echo "www-data  ALL=NOPASSWD: /sbin/adduser" >> /etc/sudoers
 echo "www-data  ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+touch /etc/ood/config/apps/bc_desktop/${PCLUSTER_NAME}.yml
+cat << EOF >> /etc/ood/config/apps/bc_desktop/${PCLUSTER_NAME}.yml
+---
+title: "$PCLUSTER_NAME Desktop"
+cluster: "${PCLUSTER_NAME}"
+submit: "submit/${PCLUSTER_NAME}-submit.yml.erb"
+attributes:
+  desktop: xfce
+  bc_queue: desktop
+  bc_account: null
+EOF
+
 # Setup for interactive desktops with PCluster
-rm -rf /var/www/ood/apps/sys/bc_desktop/submit.yml.erb
-cat << EOF >> /var/www/ood/apps/sys/bc_desktop/submit.yml.erb
+mkdir /etc/ood/config/apps/bc_desktop/submit/
+cat << EOF >> /etc/ood/config/apps/bc_desktop/submit/${PCLUSTER_NAME}-submit.yml.erb
 batch_connect:
   template: vnc
   websockify_cmd: "/usr/local/bin/websockify"
-  set_host: "host=$(hostname | awk '{print $1}').${PCLUSTER_NAME}.pcluster"
+  set_host: "host=\$(hostname | awk '{print \$1}').${PCLUSTER_NAME}.pcluster"
 cluster: ${PCLUSTER_NAME}
-desktop: xfce
 EOF
 shutdown -r now
