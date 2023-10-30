@@ -70,6 +70,11 @@ PATH=$PATH:/opt/TurboVNC/bin:/shared/software/bin
 export XDG_RUNTIME_DIR="$HOME/.cache/dconf"
 EOF
 
+# Give AD group with Admin user passwordless sudo
+cat >> /etc/sudoers.d/99-admin-ad-users << 'EOF'
+%DnsAdmins ALL=(ALL) NOPASSWD:ALL
+EOF
+
 #
 #wget https://download2.rstudio.org/server/centos7/x86_64/rstudio-server-rhel-2023.03.0-386-x86_64.rpm
 # run this on compute node

@@ -166,3 +166,8 @@ aws s3 cp /etc/ood/config/clusters.d/$STACK_NAME.yml s3://$S3_CONFIG_BUCKET/clus
 cat >> /etc/bashrc << 'EOF'
 PATH=$PATH:/shared/software/bin
 EOF
+
+# Give AD group with Admin user passwordless sudo
+cat >> /etc/sudoers.d/99-admin-ad-users << 'EOF'
+%DnsAdmins ALL=(ALL) NOPASSWD:ALL
+EOF

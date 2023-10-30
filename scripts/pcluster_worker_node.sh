@@ -43,3 +43,8 @@ systemctl restart sssd
 cat >> /etc/bashrc << 'EOF'
 PATH=$PATH:/shared/software/bin
 EOF
+
+# Give AD group with Admin user passwordless sudo
+cat >> /etc/sudoers.d/99-admin-ad-users << 'EOF'
+%DnsAdmins ALL=(ALL) NOPASSWD:ALL
+EOF
