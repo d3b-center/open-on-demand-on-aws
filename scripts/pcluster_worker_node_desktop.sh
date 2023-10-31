@@ -59,15 +59,15 @@ yum install turbovnc xfce4-session xfwm4 xfce4-panel xfdesktop xfce4-settings -y
 amazon-linux-extras install python3.8
 ln -sf /usr/bin/python3.8 /usr/bin/python3
 
-pip3 install --no-input websockify
-pip3 install --no-input jupyter
-pip3 install --no-input notebook
+pip3 install --no-input websockify jupyter notebook
 
 #
 cat >> /etc/bashrc << 'EOF'
 PATH=$PATH:/opt/TurboVNC/bin:/shared/software/bin
 #this is to fix the dconf permission error
 export XDG_RUNTIME_DIR="$HOME/.cache/dconf"
+# SSH in to localhost to use PAM for sudo access
+ssh $(whoami)@$(hostname)
 EOF
 
 # Give AD group with Admin user passwordless sudo

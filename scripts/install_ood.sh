@@ -119,6 +119,7 @@ if  id "\$1" &> /dev/null; then
     sudo chown \$1:"Domain Users" /shared/home/\$1 >> /var/log/add_user.log
   #  echo "\$1 $(id -u $1)" >> /shared/userlistfile
     sudo su \$1 -c 'ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -P ""'
+    sudo su \$1 -c 'echo "source /etc/bashrc" > ~/.bashrc'
     sudo su \$1 -c 'cat ~/.ssh/id_rsa.pub > ~/.ssh/authorized_keys'
     sudo chmod 600 /shared/home/$USER/.ssh/*
   fi
