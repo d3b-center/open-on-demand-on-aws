@@ -66,8 +66,6 @@ cat >> /etc/bashrc << 'EOF'
 PATH=$PATH:/opt/TurboVNC/bin:/shared/software/bin
 #this is to fix the dconf permission error
 export XDG_RUNTIME_DIR="$HOME/.cache/dconf"
-# SSH in to localhost to use PAM for sudo access
-ssh $(whoami)@$(hostname)
 EOF
 
 # Give AD group with Admin user passwordless sudo
